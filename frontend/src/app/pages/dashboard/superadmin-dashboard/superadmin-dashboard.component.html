@@ -1,0 +1,119 @@
+<div class="container-fluid py-4">
+  <h2 class="mb-4">Superadmin Dashboard</h2>
+
+  <!-- Stats Cards -->
+  <div class="row g-3 mb-4 col-md-12 col-xl-12">
+    <div class="col-md-3">
+      <div class="card border-primary">
+        <div class="card-body text-center">
+          <h5 class="card-title text-primary">{{ totalSchools }}</h5>
+          <p class="card-text">Total Schools</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-warning">
+        <div class="card-body text-center">
+          <h5 class="card-title text-warning">{{ activeTrials }}</h5>
+          <p class="card-text">Active Trials</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-success">
+        <div class="card-body text-center">
+          <h5 class="card-title text-success">{{ activePaid }}</h5>
+          <p class="card-text">Paid Plans</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-info">
+        <div class="card-body text-center">
+          <h5 class="card-title text-info">₹{{ totalRevenue }}</h5>
+          <p class="card-text">Total Revenue</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schools Table -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">All Schools</h5>
+      <button class="btn btn-sm btn-outline-primary" (click)="loadSuperadminData()">
+        <i class="fas fa-sync"></i> Refresh
+      </button>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>School</th>
+              <th>Admin</th>
+              <th>Plan</th>
+              <th>Status</th>
+              <th>Expires</th>
+              <th>Revenue</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of schools">
+              <td>
+                <strong>{{ s.schoolName }}</strong>
+                <br><small class="text-muted">Joined {{ formatDate(s.createdAt) }}</small>
+              </td>
+              <td>{{ s.adminName }}</td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'bg-warning text-dark': s.isTrial,
+                  'bg-success': s.planType.includes('premium'),
+                  'bg-info': s.planType.includes('basic')
+                }">
+                  {{ s.planType | titlecase }}
+                  <span *ngIf="s.isTrial"> (Trial)</span>
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'bg-success': s.status === 'active',
+                  'bg-danger': s.status === 'expired',
+                  'bg-secondary': s.status === 'grace_period'
+                }">
+                  {{ s.status | titlecase }}
+                </span>
+              </td>
+              <td>
+                <span *ngIf="s.daysRemaining > 0">
+                  {{ s.daysRemaining }} days
+                </span>
+                <span *ngIf="s.daysRemaining <= 0" class="text-danger">
+                  Expired
+                </span>
+              </td>
+              <td>₹{{ s.revenue }}</td>
+              <td>
+                <button 
+                  *ngIf="s.status === 'none'" 
+                  class="btn btn-sm btn-success"
+                  (click)="activateTrial(s._id)"
+                  ngbTooltip="Give 14-day trial">
+                  Activate Trial
+                </button>
+                <span *ngIf="s.status !== 'none'" class="text-muted">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div *ngIf="loading" class="text-center p-4">
+        <div class="spinner-border" role="status"></div>
+      </div>
+      <div *ngIf="!loading && schools.length === 0" class="text-center p-4 text-muted">
+        No schools found
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,31 @@
+-- CreateTable
+CREATE TABLE `School` (
+    `id` VARCHAR(191) NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `address` JSON NULL,
+    `mobileNo` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NOT NULL,
+    `code` VARCHAR(191) NOT NULL,
+    `smtpConfig` JSON NULL,
+    `contactPerson` JSON NULL,
+    `website` VARCHAR(191) NULL,
+    `activeAcademicYear` VARCHAR(191) NULL,
+    `latitude` DOUBLE NOT NULL,
+    `longitude` DOUBLE NOT NULL,
+    `radius` INTEGER NOT NULL DEFAULT 100,
+    `createdBy` VARCHAR(191) NULL,
+    `preferredChannel` VARCHAR(191) NOT NULL DEFAULT 'sms',
+    `weeklyHolidayDay` VARCHAR(191) NOT NULL DEFAULT 'Sunday',
+    `smsPackActive` BOOLEAN NOT NULL DEFAULT false,
+    `status` BOOLEAN NOT NULL DEFAULT true,
+    `logo` VARCHAR(191) NOT NULL DEFAULT '',
+    `communication` JSON NULL,
+    `schoolTiming` JSON NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `School_name_key`(`name`),
+    UNIQUE INDEX `School_email_key`(`email`),
+    UNIQUE INDEX `School_code_key`(`code`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

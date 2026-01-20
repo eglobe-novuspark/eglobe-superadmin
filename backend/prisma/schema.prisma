@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// School Model
+model School {
+  id                   String    @id @default(uuid())
+  name                 String    @unique
+  address              Json?
+  mobileNo             String
+  email                String    @unique
+  code                 String    @unique
+  smtpConfig           Json?
+  contactPerson        Json?
+  website              String?
+  activeAcademicYear   String?
+  latitude             Float
+  longitude            Float
+  radius               Int       @default(100)
+  createdBy            String?
+  preferredChannel     String    @default("sms")
+  weeklyHolidayDay     String    @default("Sunday")
+  smsPackActive        Boolean   @default(false)
+  status               Boolean   @default(true)
+  logo                 String    @default("")
+  communication        Json?
+  schoolTiming         Json?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Relations
+  academicYears        AcademicYear[]
+  users                User[]
+  subscriptions        Subscription[]
+}
+
+
+model AcademicYear {
+  id        String   @id @default(uuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, name])
+}
+
+
+model User {
+  id                 String   @id @default(uuid())
+  name               String
+  username           String   @unique
+  email              String   @unique
+  password           String
+  role               String   // admin, teacher, student, parent
+  schoolId           String?
+  school             School?  @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  pushSubscriptions  Json?    @default("[]")
+  phoneNumber        String?
+  whatsappNumber     String?
+  whatsappOptIn      Boolean  @default(false)
+  resetToken         String?
+  resetTokenExpires  DateTime?
+  status             Boolean  @default(true)
+  additionalInfo     Json?    @default("{}")
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([schoolId, role])
+}
+
+// SuperUser Model
+model SuperUser {
+  id                  String    @id @default(uuid())
+  name                String    @default("Super Admin")
+  username            String    @unique
+  email               String    @unique
+  password            String
+  role                String    @default("superadmin")
+  
+  // ADD THESE TWO FIELDS FOR PASSWORD RESET
+  resetToken          String?   
+  resetTokenExpires   DateTime?
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+// Subscription Model
+model Subscription {
+  id                   String   @id @default(uuid())
+  schoolId             String
+  school               School   @relation(fields: [schoolId], references: [id])
+  planType             String
+  status               String   @default("active")
+  startsAt             DateTime @default(now())
+  expiresAt            DateTime
+  gracePeriodEnds      DateTime?
+  razorpayOrderId      String?
+  autoRenew            Boolean  @default(false)
+  paymentMethod        String?
+  paymentProof         String?
+  transactionId        String?
+  testMode             Boolean  @default(false)
+  durationDays         Int
+  originalAmount       Int
+  discountAmount       Int      @default(0)
+  finalAmount          Int
+  messageLimits        Json?
+  usageStats           Json?
+  priority             Int      @default(1)
+  features             Json?    @default("[]")  // ← FIXED: Use Json instead of String[]
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([schoolId, status])
+  @@index([expiresAt])
+}
+
+
+
+// BankConfig Model
+model BankConfig {
+  id            String   @id @default(uuid())
+  accountName   String?
+  accountNumber String?
+  ifscCode      String?
+  active        Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// LoginLog Model
+model LoginLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  email     String?
+  role      String?
+  schoolId  String?
+  ip        String?
+  city      String?
+  country   String?
+  device    String?
+  browser   String?
+  os        String?
+  status    String
+  reason    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Notification Model
+model Notification {
+  id          String   @id @default(uuid())
+  schoolId    String
+  studentId   String?
+  senderId    String
+  type        String
+  title       String
+  message     String
+  recipientId String?
+  data        Json?    @default("{}")
+  status      String   @default("pending")
+
+  createdAt   DateTime @default(now())
+}
+
+// PendingSchool Model
+model PendingSchool {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  mobileNo   String
+  address    Json?
+  status     String   @default("pending")
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Plan Model
+model Plan {
+  id             String   @id @default(uuid())
+  name           String
+  amount         Int
+  interval       String   @default("monthly")
+  razorpayPlanId String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// Verification Model
+model Verification {
+  id              String   @id @default(uuid())
+  phoneNumber     String
+  verificationSid String
+  status          String   @default("pending")
+  createdAt       DateTime @default(now())
+}
+
+// AuditLog Model
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String
+  details   Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}

@@ -1,0 +1,121 @@
+<div class="flex flex-col justify-center flex-1 w-full max-w-md mx-auto py-8">
+  <div>
+    <div class="mb-6 sm:mb-8">
+      <h1 class="mb-2 font-semibold text-gray-900 text-xl sm:text-2xl dark:text-white">
+        Sign In
+      </h1>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Enter your email and password to sign in.
+      </p>
+    </div>
+
+    <ng-container *ngIf="!showForgotPassword; else forgotPasswordTemplate">
+      <form class="space-y-4" [formGroup]="loginForm" (ngSubmit)="onLoggedin($event)">
+        <div>
+          <app-label>Email <span class="text-red-500">*</span></app-label>
+          <app-input-field
+            type="email"
+            formControlName="email"
+            [className]="'form-input'"
+            placeholder="Enter your email"
+            autocomplete="email"
+            [hint]="getErrorHint('email', loginForm, 'email')"
+            [error]="getFieldErrorState('email', loginForm)"
+            [success]="getFieldSuccessState('email', loginForm)"
+          />
+        </div>
+
+        <div>
+          <app-label>Password <span class="text-red-500">*</span></app-label>
+          <div class="relative">
+            <app-input-field
+              type="{{ showPassword ? 'text' : 'password' }}"
+              formControlName="password"
+              [className]="'form-input pr-10'"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              [hint]="getErrorHint('password', loginForm, 'password')"
+              [error]="getFieldErrorState('password', loginForm)"
+              [success]="getFieldSuccessState('password', loginForm)"
+            />
+            <button
+              type="button"
+              (click)="togglePasswordVisibility()"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+            >
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" *ngIf="!showPassword">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" *ngIf="showPassword">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="serverErrors.message && !serverErrors.email" class="error-text col-span-full">
+          {{ serverErrors.message }}
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <div class="flex items-center">
+            <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <input type="checkbox" id="remember" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600" checked />
+              <span>Remember me</span>
+            </label>
+          </div>
+          <a (click)="toggleForgotPassword(); $event.preventDefault()" class="forgot-link">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="login-btn" [disabled]="isDisable">
+          <span *ngIf="!isLoading">Sign In</span>
+          <span *ngIf="isLoading" class="flex items-center justify-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Signing in...
+          </span>
+        </button>
+      </form>
+    </ng-container>
+
+    <ng-template #forgotPasswordTemplate>
+      <form class="space-y-4" [formGroup]="forgotPasswordForm" (ngSubmit)="onForgotPassword()">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Forgot Password?</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Enter your email to reset your password.</p>
+        
+        <div>
+          <app-label>Email Address <span class="text-red-500">*</span></app-label>
+          <app-input-field
+            type="email"
+            formControlName="email"
+            [className]="'form-input'"
+            placeholder="Enter your email"
+            autocomplete="email"
+            [hint]="getErrorHint('email', forgotPasswordForm)"
+            [error]="getFieldErrorState('email', forgotPasswordForm)"
+            [success]="getFieldSuccessState('email', forgotPasswordForm)"
+          />
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <a (click)="toggleForgotPassword(); $event.preventDefault()" class="back-link">Back to Login</a>
+        </div>
+
+        <button type="submit" class="login-btn" [disabled]="isDisable">
+          <span *ngIf="!isLoading">Send Reset Link</span>
+          <span *ngIf="isLoading" class="flex items-center justify-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Sending...
+          </span>
+        </button>
+      </form>
+    </ng-template>
+  </div>
+</div>
