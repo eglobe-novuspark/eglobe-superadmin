@@ -13,8 +13,8 @@ const logger = console;
 // 1. CORS
 // ──────────────────────────────────────────────
 const allowedOrigins = [
-  'https://superadmin.edglobe.novuspark.com',
-  'https://school.edglobe.novuspark.com'
+  'https://superadmin-edglobe.novuspark.com',
+  'https://school-edglobe.novuspark.com'
 ];
 
 app.use(cors({
