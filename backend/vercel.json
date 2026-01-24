@@ -1,13 +1,28 @@
 {
   "version": 2,
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/app.js" },
-    { "src": "/socket.io/(.*)", "dest": "/app.js" }
-  
+  "builds": [
+    {
+      "src": "app.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
+    }
   ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "app.js",
+      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
   "functions": {
     "app.js": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "memory": 3008
     }
   }
 }
