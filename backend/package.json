@@ -23,7 +23,6 @@
     "mongoose": "^8.19.1",
     "morgan": "^1.10.1",
     "nodemailer": "^7.0.9",
-    "socket.io": "^4.8.3",
     "twilio": "^5.10.4",
     "winston": "^3.18.3"
   },

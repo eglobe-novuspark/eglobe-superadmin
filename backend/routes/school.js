@@ -5,7 +5,6 @@ const superadmin = require('../middleware/superadmin');
 const router = express.Router();
 
 router.use(auth, superadmin);
-router.post('/', createSchool);
 router.get('/', getAllSchools);
 router.delete('/:id', deleteSchool);
 
