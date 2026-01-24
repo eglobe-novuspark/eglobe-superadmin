@@ -29,28 +29,11 @@ if (!process.env.VERCEL) {
   allowedOrigins.push('http://localhost:4200');
 }
 
-// FIXED: Proper CORS configuration
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log(`CORS blocked: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
-
-// REMOVED: app.options('*', cors()); - This was causing the error
+// Simple CORS
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
 // ──────────────────────────────────────────────
 // 2. Security & Middleware
@@ -94,7 +77,7 @@ const connectDB = async () => {
 connectDB();
 
 // ──────────────────────────────────────────────
-// 4. Load Routes with better error handling
+// 4. Load Routes - SIMPLIFIED for Vercel
 // ──────────────────────────────────────────────
 const loadRoutes = () => {
   const routes = [
@@ -112,24 +95,16 @@ const loadRoutes = () => {
       console.log(`✅ Loaded ${route.name} routes`);
     } catch (err) {
       console.error(`❌ Failed to load ${route.name} routes:`, err.message);
-      // Create a stub route to prevent crashes
-      const stubRouter = express.Router();
-      stubRouter.all('*', (req, res) => {
-        res.status(503).json({
-          error: `Service unavailable: ${route.name}`,
-          message: 'Route module failed to load'
-        });
-      });
-      app.use(route.path, stubRouter);
+      // Don't create stub routes - just log the error
     }
   });
 };
 
-// Load routes
+// Try to load routes
 loadRoutes();
 
 // ──────────────────────────────────────────────
-// 5. Routes
+// 5. Basic Routes (Always Available)
 // ──────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.json({
@@ -150,69 +125,63 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Test route for routes
-app.get('/api/test-routes', (req, res) => {
-  const routes = [];
-  app._router.stack.forEach((middleware) => {
-    if (middleware.route) {
-      routes.push({
-        path: middleware.route.path,
-        methods: Object.keys(middleware.route.methods)
-      });
-    } else if (middleware.name === 'router') {
-      if (middleware.handle.stack) {
-        middleware.handle.stack.forEach((handler) => {
-          if (handler.route) {
-            routes.push({
-              path: handler.route.path,
-              methods: Object.keys(handler.route.methods)
-            });
-          }
-        });
-      }
-    }
-  });
-  
+// Test route
+app.get('/api/test', (req, res) => {
   res.json({
-    routes: routes,
-    total: routes.length
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Route not found',
-    path: req.path,
-    method: req.method
-  });
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err.message);
-  
-  // Handle CORS errors
-  if (err.message === 'Not allowed by CORS') {
-    return res.status(403).json({
-      error: 'CORS Error',
-      allowedOrigins: allowedOrigins
-    });
-  }
-  
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
+    message: 'API is working!',
+    routesAvailable: [
+      '/api/auth',
+      '/api/schools', 
+      '/api/plans',
+      '/api/bank',
+      '/api/superadmin'
+    ]
   });
 });
 
 // ──────────────────────────────────────────────
-// 6. Export for Vercel
+// 6. 404 Handler - FIXED: Use regex instead of '*'
+// ──────────────────────────────────────────────
+// IMPORTANT: This MUST be the LAST route before error handlers
+app.use((req, res, next) => {
+  // Check if this is an API route that wasn't handled
+  if (req.path.startsWith('/api/')) {
+    res.status(404).json({
+      error: 'Route not found',
+      path: req.path,
+      method: req.method,
+      timestamp: new Date().toISOString()
+    });
+  } else {
+    // For non-API routes, also return JSON
+    res.status(404).json({
+      error: 'Not found',
+      message: 'Use API routes starting with /api/',
+      availableRoutes: ['/', '/api/health', '/api/test']
+    });
+  }
+});
+
+// ──────────────────────────────────────────────
+// 7. Global error handler
+// ──────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error('Server Error:', err.message);
+  
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ──────────────────────────────────────────────
+// 8. Export for Vercel
 // ──────────────────────────────────────────────
 module.exports = app;
 
 // ──────────────────────────────────────────────
-// 7. Local development server (only if not Vercel)
+// 9. Local development server (only if not Vercel)
 // ──────────────────────────────────────────────
 if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 3002;
