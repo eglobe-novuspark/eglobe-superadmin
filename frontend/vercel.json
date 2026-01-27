@@ -1,13 +1,8 @@
 {
-  "version": 2,
   "framework": null,
-  "buildCommand": null,
-  "installCommand": null,
-  "outputDirectory": "dist/ng-tailadmin",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist/ng-tailadmin",
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
