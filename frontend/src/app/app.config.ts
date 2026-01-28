@@ -9,7 +9,7 @@ import { provideToastr } from 'ngx-toastr';
 import { tokenInterceptor } from './shared/interceptor/token.interceptor';
 import { loadingInterceptor } from './shared/interceptor/loading.interceptor';
 import { authInterceptor } from './shared/interceptor/auth.interceptor';
-import { environment } from '../environments/environments';
+import { environment } from '../environment/environments';
 import { GoogleMapsModule } from '@angular/google-maps';
 
 // const initializeRazorpay = (razorpayService: RazorpayService) => () =>

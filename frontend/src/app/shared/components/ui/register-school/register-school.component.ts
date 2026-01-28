@@ -5,7 +5,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { ToastrService } from 'ngx-toastr';
-import { environment } from '../../../../../environments/environments';
+import { environment } from '../../../../../environment/environments';
 import { GoogleMap, MapMarker } from '@angular/google-maps';
 import { LabelComponent } from '../../form/label/label.component';
 import { SelectComponent } from '../../form/select/select.component';
