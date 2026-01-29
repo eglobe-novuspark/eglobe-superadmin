@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const SuperUser = require('../models/SuperUser');
+const SuperUser = require('../models/superuser');
 require('dotenv').config();
 
 exports.login = async (req, res) => {
