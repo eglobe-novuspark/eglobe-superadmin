@@ -20,8 +20,8 @@ const app = express();
 // ──────────────────────────────────────────────
 const allowedOrigins = [
   'https://superadmin-edglobe-novuspark.com',
-  'https://school-edglobe-novuspark.com',
-  'https://eglobe-superadmin.vercel.app'
+  'https://eglobe-superadmin.vercel.app',
+  'https://eglobe-novuspark-superadmin.vercel.app'
 ];
 
 // Add localhost for development
@@ -30,9 +30,35 @@ if (!process.env.VERCEL) {
 }
 
 // Simple CORS
+// Enhanced CORS configuration
 app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    console.log('CORS origin check:', origin); // Debug log
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+    
+    // Allow all Vercel preview URLs
+    if (origin.includes('.vercel.app')) {
+      console.log('Allowing Vercel origin:', origin);
+      return callback(null, true);
+    }
+    
+    console.log('Blocked CORS origin:', origin);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Length', 'Authorization'],
+  optionsSuccessStatus: 204
 }));
 
 // ──────────────────────────────────────────────
