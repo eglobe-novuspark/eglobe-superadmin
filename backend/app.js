@@ -15,6 +15,7 @@ if (!process.env.VERCEL) {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 
 // ──────────────────────────────────────────────
 // 1. CORS Configuration for Vercel
@@ -32,33 +33,11 @@ if (!process.env.VERCEL) {
 
 // Enhanced CORS configuration
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) {
-      return callback(null, true);
-    }
-    
-    console.log('CORS origin check:', origin);
-    
-    // Check if origin is in allowed list
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      return callback(null, true);
-    }
-    
-    // Allow all Vercel preview URLs
-    if (origin.includes('.vercel.app')) {
-      console.log('Allowing Vercel origin:', origin);
-      return callback(null, true);
-    }
-    
-    console.log('Blocked CORS origin:', origin);
-    callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['Content-Length', 'Authorization'],
-  optionsSuccessStatus: 204
+  origin: [
+    'https://eglobe-novuspark-superadmin.vercel.app',
+    'https://eglobe-superadmin.vercel.app'
+  ],
+  credentials: true
 }));
 
 // ──────────────────────────────────────────────
@@ -73,9 +52,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
-  message: { error: 'Too many requests, please try again later.' }
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  keyGenerator: (req) => {
+    // Use the X-Forwarded-For header in Vercel
+    return req.headers['x-forwarded-for'] || req.ip;
+  }
 });
 app.use('/api/auth', authLimiter);
 

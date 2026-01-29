@@ -4,7 +4,8 @@ require('dotenv').config();
 
 exports.login = async (req, res) => {
   const { email, username, password } = req.body;
-
+ console.log('Login attempt:', { email, username }); // DEBUG
+  console.log('Body received:', req.body);
   try {
     if (!password || (!email && !username)) {
       return res.status(400).json({ error: 'Email/Username and password required' });
@@ -33,7 +34,10 @@ exports.login = async (req, res) => {
     }
 
     const isMatch = await superUser.comparePassword(password);
-    console.log('Password match:', isMatch);  // DEBUG: true
+  console.log('Password match:', isMatch);
+  console.log('Stored hash:', superUser.password); // DEBUG
+  console.log('Input password:', password); // DEBUG
+  console.log('User found:', superUser.email, superUser.username);
 
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
