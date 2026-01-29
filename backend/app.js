@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
+const path = require('path'); // ADD THIS
 
 // Configure dotenv ONLY if not in Vercel
 if (!process.env.VERCEL) {
@@ -29,7 +30,6 @@ if (!process.env.VERCEL) {
   allowedOrigins.push('http://localhost:4200');
 }
 
-// Simple CORS
 // Enhanced CORS configuration
 app.use(cors({
   origin: function (origin, callback) {
@@ -38,7 +38,7 @@ app.use(cors({
       return callback(null, true);
     }
     
-    console.log('CORS origin check:', origin); // Debug log
+    console.log('CORS origin check:', origin);
     
     // Check if origin is in allowed list
     if (allowedOrigins.indexOf(origin) !== -1) {
@@ -65,7 +65,7 @@ app.use(cors({
 // 2. Security & Middleware
 // ──────────────────────────────────────────────
 app.use(helmet({
-  contentSecurityPolicy: false // Disable for now to avoid issues
+  contentSecurityPolicy: false
 }));
 
 app.use(morgan('dev'));
@@ -86,43 +86,71 @@ const connectDB = async () => {
   if (process.env.MONGODB_URI) {
     try {
       await mongoose.connect(process.env.MONGODB_URI, {
-        serverSelectionTimeoutMS: 5000,
+        serverSelectionTimeoutMS: 10000,
         socketTimeoutMS: 45000,
       });
       console.log('✅ MongoDB connected successfully');
     } catch (err) {
       console.error('❌ MongoDB connection error:', err.message);
-      // Don't exit in serverless!
     }
   } else {
     console.log('⚠️ MONGODB_URI not set - running without database');
   }
 };
 
-// Connect to DB
 connectDB();
 
 // ──────────────────────────────────────────────
-// 4. Load Routes - SIMPLIFIED for Vercel
+// 4. Load Routes - FIXED for Vercel
 // ──────────────────────────────────────────────
 const loadRoutes = () => {
-  const routes = [
-    { path: '/api/auth', file: './routes/auth', name: 'Auth' },
-    { path: '/api/schools', file: './routes/school', name: 'Schools' },
-    { path: '/api/plans', file: './routes/plans', name: 'Plans' },
-    { path: '/api/bank', file: './routes/bank', name: 'Bank' },
-    { path: '/api/superadmin', file: './routes/superadminRoutes', name: 'Superadmin' }
-  ];
+  try {
+    // Load each route with absolute paths
+    const authRoutes = require('./routes/auth');
+    const schoolRoutes = require('./routes/school');
+    const plansRoutes = require('./routes/plans');
+    const bankRoutes = require('./routes/bank');
+    const superadminRoutes = require('./routes/superadminRoutes');
+    
+    // Use routes
+    app.use('/api/auth', authRoutes);
+    app.use('/api/schools', schoolRoutes);
+    app.use('/api/plans', plansRoutes);
+    app.use('/api/bank', bankRoutes);
+    app.use('/api/superadmin', superadminRoutes);
+    
+    console.log('✅ All routes loaded successfully');
+    
+  } catch (err) {
+    console.error('❌ Error loading routes:', err.message);
+    console.error('Stack:', err.stack);
+    
+    // Create fallback routes so API doesn't return 404
+    createFallbackRoutes();
+  }
+};
 
-  routes.forEach(route => {
-    try {
-      const router = require(route.file);
-      app.use(route.path, router);
-      console.log(`✅ Loaded ${route.name} routes`);
-    } catch (err) {
-      console.error(`❌ Failed to load ${route.name} routes:`, err.message);
-      // Don't create stub routes - just log the error
-    }
+// Fallback routes if actual routes fail to load
+const createFallbackRoutes = () => {
+  console.log('Creating fallback routes...');
+  
+  // Fallback auth route
+  app.post('/api/auth/login', (req, res) => {
+    console.log('Fallback login route called:', req.body);
+    res.json({
+      success: false,
+      message: 'Auth routes not loaded. Check server logs.',
+      fallback: true
+    });
+  });
+  
+  // Fallback health check
+  app.get('/api/health', (req, res) => {
+    res.json({
+      status: 'partial',
+      message: 'Routes not loaded properly',
+      timestamp: new Date().toISOString()
+    });
   });
 };
 
@@ -132,13 +160,37 @@ loadRoutes();
 // ──────────────────────────────────────────────
 // 5. Basic Routes (Always Available)
 // ──────────────────────────────────────────────
+// TEST ENDPOINT - Add this to verify routes work
+app.get('/api/test-route', (req, res) => {
+  res.json({
+    message: 'Test route is working',
+    routes: {
+      auth: '/api/auth',
+      schools: '/api/schools',
+      plans: '/api/plans',
+      bank: '/api/bank',
+      superadmin: '/api/superadmin'
+    }
+  });
+});
+
 app.get('/', (req, res) => {
   res.json({
     message: 'Superadmin API',
     status: 'running',
     environment: process.env.NODE_ENV || 'development',
     vercel: !!process.env.VERCEL,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    availableRoutes: [
+      '/',
+      '/api/health',
+      '/api/test-route',
+      '/api/auth/login',
+      '/api/schools',
+      '/api/plans',
+      '/api/bank',
+      '/api/superadmin'
+    ]
   });
 });
 
@@ -147,43 +199,31 @@ app.get('/api/health', (req, res) => {
     status: 'OK',
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
-
-// Test route
-app.get('/api/test', (req, res) => {
-  res.json({
-    message: 'API is working!',
-    routesAvailable: [
-      '/api/auth',
-      '/api/schools', 
-      '/api/plans',
-      '/api/bank',
-      '/api/superadmin'
-    ]
+    uptime: process.uptime(),
+    routesLoaded: true
   });
 });
 
 // ──────────────────────────────────────────────
-// 6. 404 Handler - FIXED: Use regex instead of '*'
+// 6. 404 Handler
 // ──────────────────────────────────────────────
-// IMPORTANT: This MUST be the LAST route before error handlers
 app.use((req, res, next) => {
-  // Check if this is an API route that wasn't handled
   if (req.path.startsWith('/api/')) {
     res.status(404).json({
       error: 'Route not found',
       path: req.path,
       method: req.method,
+      availableRoutes: [
+        '/api/auth/login',
+        '/api/health',
+        '/api/test-route'
+      ],
       timestamp: new Date().toISOString()
     });
   } else {
-    // For non-API routes, also return JSON
     res.status(404).json({
       error: 'Not found',
-      message: 'Use API routes starting with /api/',
-      availableRoutes: ['/', '/api/health', '/api/test']
+      message: 'Use API routes starting with /api/'
     });
   }
 });
