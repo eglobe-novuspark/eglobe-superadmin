@@ -350,9 +350,15 @@ const registerSchool = async (req, res) => {
         closingTime,
         lunchBreak,
         assignTrial = false,
-        trialDurationDays = null
+        trialDurationDays = null,
+        // NEW: Academic year fields from frontend
+        academicYearName,      // e.g., "2026-2027" (required)
+        academicYearStartDate, // e.g., "2026-04-01" (required)
+        academicYearEndDate    // e.g., "2027-03-31" (required)
       } = req.body;
+      
       console.log('Received registration data:', req.body);
+      
       /* ────────────────────── 1. AUTH & OTP ────────────────────── */
       if (!req.user || !req.user.id) {
         throw { status: 401, message: 'Unauthorized: Invalid user session' };
@@ -370,7 +376,12 @@ const registerSchool = async (req, res) => {
       }
 
       /* ────────────────────── 3. REQUIRED FIELDS ────────────────────── */
-      const required = ['schoolName','adminName','username','email','mobileNo','address','latitude','longitude','preferredChannel'];
+      // UPDATED: Add academic year fields to required fields
+      const required = [
+        'schoolName', 'adminName', 'username', 'email', 'mobileNo', 
+        'address', 'latitude', 'longitude', 'preferredChannel',
+        'academicYearName', 'academicYearStartDate', 'academicYearEndDate'
+      ];
       const missing = required.filter(f => !req.body[f]);
       if (missing.length) throw { status: 400, message: `Missing: ${missing.join(', ')}` };
 
@@ -403,7 +414,34 @@ const registerSchool = async (req, res) => {
         postalCode: address.postalCode.trim()
       };
 
-      /* ────────────────────── 8. UNIQUE SCHOOL CODE ────────────────────── */
+      /* ────────────────────── 8. VALIDATE ACADEMIC YEAR DATA ────────────────────── */
+      // Validate academic year name format (e.g., "2026-2027")
+      if (!/^\d{4}-\d{4}$/.test(academicYearName)) {
+        throw { status: 400, message: 'Academic year name must be in format: YYYY-YYYY' };
+      }
+      
+      // Validate start and end dates
+      const startDate = new Date(academicYearStartDate);
+      const endDate = new Date(academicYearEndDate);
+      
+      if (isNaN(startDate.getTime())) {
+        throw { status: 400, message: 'Invalid academic year start date' };
+      }
+      if (isNaN(endDate.getTime())) {
+        throw { status: 400, message: 'Invalid academic year end date' };
+      }
+      if (endDate <= startDate) {
+        throw { status: 400, message: 'Academic year end date must be after start date' };
+      }
+      
+      // Validate year matches the name (optional but good practice)
+      const [startYearFromName] = academicYearName.split('-');
+      const startYearFromDate = startDate.getFullYear();
+      if (parseInt(startYearFromName) !== startYearFromDate) {
+        throw { status: 400, message: 'Academic year name should match start year' };
+      }
+
+      /* ────────────────────── 9. UNIQUE SCHOOL CODE ────────────────────── */
       let finalCode;
       try {
         const existing = await School.find({}, 'code').session(session);
@@ -426,7 +464,7 @@ const registerSchool = async (req, res) => {
         throw { status: 500, message: 'Failed to generate unique school code' };
       }
 
-      /* ────────────────────── 9. DUPLICATES ────────────────────── */
+      /* ────────────────────── 10. DUPLICATES ────────────────────── */
       const [dupUser, dupSchool] = await Promise.all([
         User.findOne({ $or: [{ email }, { username }] }).session(session),
         School.findOne({ name: new RegExp(`^${schoolName}$`,'i') }).session(session)
@@ -434,7 +472,7 @@ const registerSchool = async (req, res) => {
       if (dupUser) throw { status: 409, message: 'Email or username already exists' };
       if (dupSchool) throw { status: 409, message: 'School name already exists' };
 
-      /* ────────────────────── 10. CREATE DOCS ────────────────────── */
+      /* ────────────────────── 11. CREATE DOCS ────────────────────── */
       const newSchool = new School({
         name: schoolName,
         address: addressObj,
@@ -457,12 +495,12 @@ const registerSchool = async (req, res) => {
         'schoolTiming.lunchBreak': lunchBreak || '12:00 - 12:30'
       });
 
-      const currentYear = new Date().getFullYear();
+      // UPDATED: Create academic year with data from frontend
       const defaultYear = new AcademicYear({
         schoolId: newSchool._id,
-        name: `${currentYear}-${currentYear + 1}`,
-        startDate: new Date(currentYear, 3, 1),
-        endDate: new Date(currentYear + 1, 1, 31),
+        name: academicYearName, // From frontend
+        startDate: startDate,   // From frontend
+        endDate: endDate,       // From frontend
         isActive: true
       });
 
@@ -496,9 +534,9 @@ const registerSchool = async (req, res) => {
         defaultYear.save({ session })
       ]);
 
-      /* ────────────────────── 11. OPTIONAL TRIAL SUBSCRIPTION ────────────────────── */
+      /* ────────────────────── 12. OPTIONAL TRIAL SUBSCRIPTION ────────────────────── */
       let subscriptionId = null;
-      let duration = null; // ← MOVED HERE: Always defined, safe for audit log
+      let duration = null;
 
       if (assignTrial && trialDurationDays) {
         duration = parseInt(trialDurationDays, 10);
@@ -532,13 +570,13 @@ const registerSchool = async (req, res) => {
         subscriptionId = subscription._id;
       }
 
-      /* ────────────────────── 12. PENDING SCHOOL UPDATE ────────────────────── */
+      /* ────────────────────── 13. PENDING SCHOOL UPDATE ────────────────────── */
       if (pendingSchoolId) {
         const p = await PendingSchool.findById(pendingSchoolId).session(session);
         if (p) { p.status = 'completed'; await p.save({ session }); }
       }
 
-      /* ────────────────────── 13. EMAIL WITH RESET LINK ────────────────────── */
+      /* ────────────────────── 14. EMAIL WITH RESET LINK ────────────────────── */
       if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
         throw { status: 500, message: 'Email credentials missing in environment' };
       }
@@ -559,6 +597,7 @@ const registerSchool = async (req, res) => {
         <p>Hi <strong>${adminName}</strong>,</p>
         <p>Your school <strong>${schoolName}</strong> (Code: <strong>${finalCode}</strong>) is ready!</p>
         <p><strong>Username:</strong> ${username}</p>
+        <p><strong>Academic Year:</strong> ${academicYearName}</p>
         <p>
           <a href="${resetLink}" 
              style="background:#007bff;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold;">
@@ -582,17 +621,17 @@ const registerSchool = async (req, res) => {
         throw { status: 500, message: 'Failed to send email. Check server logs.' };
       }
 
-       /* ────────────────────── 14. SEND WHATSAPP NOTIFICATION ────────────────────── */
+      /* ────────────────────── 15. SEND WHATSAPP NOTIFICATION ────────────────────── */
       let whatsappResult = null;
       let smsResult = null;
       
       try {
-        // Only send WhatsApp if school has whatsapp in preferred channel
         if (preferredChannel === 'whatsapp' || preferredChannel === 'both') {
           whatsappResult = await WhatsAppService.sendSchoolOnboarding(
             {
               name: schoolName,
-              code: finalCode
+              code: finalCode,
+              academicYear: academicYearName // Add academic year to notification
             },
             {
               name: adminName,
@@ -602,11 +641,11 @@ const registerSchool = async (req, res) => {
           );
           
           if (!whatsappResult.success) {
-            // WhatsApp failed, try SMS fallback
             smsResult = await WhatsAppService.sendSMSFallback(
               {
                 name: schoolName,
-                code: finalCode
+                code: finalCode,
+                academicYear: academicYearName
               },
               {
                 name: adminName,
@@ -616,11 +655,11 @@ const registerSchool = async (req, res) => {
             );
           }
         } else if (preferredChannel === 'sms') {
-          // Send SMS only
           smsResult = await WhatsAppService.sendSMSFallback(
             {
               name: schoolName,
-              code: finalCode
+              code: finalCode,
+              academicYear: academicYearName
             },
             {
               name: adminName,
@@ -629,19 +668,16 @@ const registerSchool = async (req, res) => {
             }
           );
         }
-
-        
       } catch (notificationError) {
         console.error('Notification sending failed:', notificationError);
-        // Don't throw error - notifications are not critical for school creation
       }
 
-      /* ────────────────────── 14. WELCOME NOTIFICATION ────────────────────── */
+      /* ────────────────────── 16. WELCOME NOTIFICATION ────────────────────── */
       const notif = new Notification({
         schoolId: newSchool._id,
         type: 'welcome',
         title: `Welcome to ${schoolName}!`,
-        message: `Your school is ready! Set password: ${resetLink}`,
+        message: `Your school is ready! Academic Year: ${academicYearName}. Set password: ${resetLink}`,
         recipientId: adminUser._id,
         senderId: req.user.id,
         data: {
@@ -649,12 +685,13 @@ const registerSchool = async (req, res) => {
           username,
           schoolName,
           code: finalCode,
+          academicYear: academicYearName,
           recipientPhone: normalizedMobileNo
         }
       });
       await notif.save({ session });
 
-      /* ────────────────────── 15. AUDIT LOG ────────────────────── */
+      /* ────────────────────── 17. AUDIT LOG ────────────────────── */
       await new AuditLog({
         userId: req.user.id,
         action: 'create_school',
@@ -667,11 +704,12 @@ const registerSchool = async (req, res) => {
           longitude,
           mobileNo: normalizedMobileNo,
           trialAssigned: !!subscriptionId,
-          trialDurationDays: subscriptionId ? duration : null  // ← Now safe
+          trialDurationDays: subscriptionId ? duration : null,
+          academicYear: academicYearName // Use frontend-provided academic year
         }
       }).save({ session });
 
-      /* ────────────────────── 16. SUCCESS RESPONSE ────────────────────── */
+      /* ────────────────────── 18. SUCCESS RESPONSE ────────────────────── */
       res.status(201).json({
         message: 'School registered successfully. Password reset link sent to email.',
         data: {
@@ -679,10 +717,10 @@ const registerSchool = async (req, res) => {
           schoolName,
           code: finalCode,
           adminUserId: adminUser._id,
-          academicYear: defaultYear.name,
-          subscriptionId,               // null if not assigned
+          academicYear: academicYearName, // From frontend
+          subscriptionId,
           trialAssigned: !!subscriptionId,
-          trialDurationDays: subscriptionId ? duration : null,  // ← Also safe here
+          trialDurationDays: subscriptionId ? duration : null,
           resetLinkSent: true
         }
       });
