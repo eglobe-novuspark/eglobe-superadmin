@@ -105,29 +105,23 @@ connectDB();
 // ──────────────────────────────────────────────
 // 4. Load Routes - SIMPLIFIED for Vercel
 // ──────────────────────────────────────────────
-const loadRoutes = () => {
-  const routes = [
-    { path: '/api/auth', file: './routes/auth', name: 'Auth' },
-    { path: '/api/schools', file: './routes/school', name: 'Schools' },
-    { path: '/api/plans', file: './routes/plans', name: 'Plans' },
-    { path: '/api/bank', file: './routes/bank', name: 'Bank' },
-    { path: '/api/superadmin', file: './routes/superadminRoutes', name: 'Superadmin' }
-  ];
-
-  routes.forEach(route => {
-    try {
-      const router = require(route.file);
-      app.use(route.path, router);
-      console.log(`✅ Loaded ${route.name} routes`);
-    } catch (err) {
-      console.error(`❌ Failed to load ${route.name} routes:`, err.message);
-      // Don't create stub routes - just log the error
-    }
-  });
+const loadRoute = (path, file, name) => {
+  try {
+    logger.info(`Loading ${name} routes...`);
+    const router = require(file);
+    app.use(path, router);
+    logger.info(`   ✓ ${name} loaded`);
+  } catch (err) {
+    logger.error(`   ✗ Failed to load ${name}:`, err.message);
+  }
 };
 
 // Try to load routes
-loadRoutes();
+loadRoute('/api/auth', './routes/auth', 'Auth');
+loadRoute('/api/schools', './routes/school', 'Schools');
+loadRoute('/api/plans', './routes/plans', 'Plans');
+loadRoute('/api/bank', './routes/bank', 'Bank');
+loadRoute('/api/superadmin', './routes/superadminRoutes', 'Superadmin');
 
 // ──────────────────────────────────────────────
 // 5. Basic Routes (Always Available)
