@@ -14,17 +14,47 @@ router.use((req, res, next) => {
 
 router.get('/dashboard', async (req, res) => {
   try {
+    // First, check if there are any schools at all
+    const schoolCount = await School.countDocuments({ status: true });
+    
+    // If no schools, return empty response immediately
+    if (schoolCount === 0) {
+      return res.json({
+        schools: [],
+        totalSchools: 0,
+        activeTrials: 0,
+        activePaid: 0,
+        totalRevenue: 0
+      });
+    }
+
+    // Only run aggregation if we have schools
     const schools = await School.aggregate([
       { $match: { status: true } },
-
-      // Sab subscriptions laao with priority sorting
+      
+      // Get admin user
+      {
+        $lookup: {
+          from: 'users',
+          let: { schoolId: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$schoolId', '$$schoolId'] }, role: 'admin' } },
+            { $limit: 1 },
+            { $project: { name: 1 } }
+          ],
+          as: 'adminUser'
+        }
+      },
+      
+      // Get latest subscription
       {
         $lookup: {
           from: 'subscriptions',
           let: { schoolId: '$_id' },
           pipeline: [
             { $match: { $expr: { $eq: ['$schoolId', '$$schoolId'] } } },
-            { $sort: { priority: -1, expiresAt: -1, createdAt: -1 } }, // Premium > Basic > Trial
+            { $sort: { priority: -1, expiresAt: -1 } },
+            { $limit: 1 },
             {
               $addFields: {
                 daysRemaining: {
@@ -40,82 +70,59 @@ router.get('/dashboard', async (req, res) => {
               }
             }
           ],
-          as: 'subscriptions'
+          as: 'currentSub'
         }
       },
-
-      // Active subscription (sabse upar wala)
-      {
-        $addFields: {
-          activeSub: {
-            $arrayElemAt: [
-              {
-                $filter: {
-                  input: '$subscriptions',
-                  cond: {
-                    $and: [
-                      { $eq: ['$$this.status', 'active'] },
-                      { $gt: ['$$this.expiresAt', new Date()] }
-                    ]
-                  }
-                }
-              },
-              0
-            ]
-          },
-          // Agar active nahi toh latest expired bhi dikha do
-          latestSub: { $arrayElemAt: ['$subscriptions', 0] }
-        }
-      },
-
-      {
-        $addFields: {
-          currentSub: { $ifNull: ['$activeSub', '$latestSub'] }
-        }
-      },
-
-      // Admin name
-      {
-        $lookup: {
-          from: 'users',
-          localField: '_id',
-          foreignField: 'schoolId',
-          pipeline: [{ $match: { role: 'admin' } }, { $limit: 1 }],
-          as: 'adminUser'
-        }
-      },
-
+      
       {
         $project: {
           _id: 1,
           schoolName: '$name',
           adminName: { $ifNull: [{ $arrayElemAt: ['$adminUser.name', 0] }, 'Unknown'] },
-          planType: '$currentSub.planType',
-          status: '$currentSub.status',
-          expiresAt: '$currentSub.expiresAt',
-          daysRemaining: '$currentSub.daysRemaining',
-          isTrial: { $eq: ['$currentSub.planType', 'trial'] },
-          revenue: { $ifNull: ['$currentSub.finalAmount', 0] },
+          planType: { $ifNull: [{ $arrayElemAt: ['$currentSub.planType', 0] }, 'none'] },
+          status: { $ifNull: [{ $arrayElemAt: ['$currentSub.status', 0] }, 'inactive'] },
+          expiresAt: { $arrayElemAt: ['$currentSub.expiresAt', 0] },
+          daysRemaining: { $arrayElemAt: ['$currentSub.daysRemaining', 0] },
+          isTrial: { $eq: [{ $ifNull: [{ $arrayElemAt: ['$currentSub.planType', 0] }, ''] }, 'trial'] },
+          revenue: { $ifNull: [{ $arrayElemAt: ['$currentSub.finalAmount', 0] }, 0] },
           createdAt: 1
         }
       },
-
+      
       { $sort: { createdAt: -1 } }
-    ]);
+    ]).maxTimeMS(15000); // 15 second timeout
 
+    // Calculate statistics
+    const activeTrials = schools.filter(s => 
+      s.isTrial && s.status === 'active' && s.daysRemaining > 0
+    ).length;
+    
+    const activePaid = schools.filter(s => 
+      !s.isTrial && s.status === 'active' && s.daysRemaining > 0
+    ).length;
+    
     const totalRevenue = schools.reduce((sum, s) => sum + s.revenue, 0);
 
     res.json({
       schools,
       totalSchools: schools.length,
-      activeTrials: schools.filter(s => s.isTrial && s.status === 'active').length,
-      activePaid: schools.filter(s => !s.isTrial && s.status === 'active').length,
+      activeTrials,
+      activePaid,
       totalRevenue
     });
 
   } catch (err) {
     console.error('Superadmin dashboard error:', err);
-    res.status(500).json({ message: 'Server error' });
+    
+    // Fallback response
+    res.status(500).json({
+      message: 'Unable to load dashboard data',
+      schools: [],
+      totalSchools: 0,
+      activeTrials: 0,
+      activePaid: 0,
+      totalRevenue: 0
+    });
   }
 });
 

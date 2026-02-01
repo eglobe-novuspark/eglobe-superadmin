@@ -23,7 +23,8 @@ app.set('trust proxy', 1);
 const allowedOrigins = [
   'https://superadmin-edglobe-novuspark.com',
   'https://eglobe-superadmin.vercel.app',
-  'https://eglobe-novuspark-superadmin.vercel.app'
+  'https://eglobe-novuspark-superadmin.vercel.app',
+  
 ];
 
 // Add localhost for development
@@ -35,7 +36,8 @@ if (!process.env.VERCEL) {
 app.use(cors({
   origin: [
     'https://eglobe-novuspark-superadmin.vercel.app',
-    'https://eglobe-superadmin.vercel.app'
+    'https://eglobe-superadmin.vercel.app',
+    'http://localhost:4200'
   ],
   credentials: true
 }));

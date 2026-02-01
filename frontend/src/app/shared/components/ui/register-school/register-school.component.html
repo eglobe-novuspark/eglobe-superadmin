@@ -1,349 +1,302 @@
 <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-  <div class="w-full max-w-2xl">
+  <div class="w-full max-w-3xl">
     <!-- Header -->
     <div class="text-center mb-8">
       <img src="images/ED-logo.png" alt="Logo" class="mx-auto h-12 w-auto mb-4" />
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Create Your School Account</h1>
-      <p class="text-gray-600 dark:text-gray-400 mb-6">Set up your school in 3 simple steps</p>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Create School Account</h1>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">Complete in 3 steps</p>
 
-      <!-- Step Indicator -->
-      <div class="flex justify-center space-x-2 mb-8">
-        @for (stepNum of [1, 2, 3]; track stepNum) {
+      <!-- Step indicator -->
+      <div class="flex justify-center space-x-3 mb-10">
+        @for (s of [1,2,3]; track s) {
           <div class="flex items-center">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300"
-                 [class]="step() >= stepNum ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'">
-              {{ stepNum }}
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold transition-all"
+                 [class.bg-blue-600]="step() >= s"
+                 [class.text-white]="step() >= s"
+                 [class.bg-gray-200]="step() < s"
+                 [class.dark:bg-gray-700]="step() < s"
+                 [class.text-gray-500]="step() < s"
+                 [class.dark:text-gray-400]="step() < s">
+              {{ s }}
             </div>
-            @if (stepNum < 3) {
-              <div class="w-8 h-1 mx-2 bg-gray-200 dark:bg-gray-700"
-                   [class]="step() > stepNum ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'"></div>
+            @if (s < 3) {
+              <div class="w-12 h-1 mx-2"
+                   [class.bg-blue-600]="step() > s"
+                   [class.bg-gray-200]="step() <= s"
+                   [class.dark:bg-gray-700]="step() <= s"></div>
             }
           </div>
         }
       </div>
     </div>
 
-    <!-- Form Card -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 md:p-8">
-      <!-- Step 1: School Info -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-10">
+
+      <!-- STEP 1 -->
       @if (step() === 1) {
-        <form [formGroup]="schoolForm" (ngSubmit)="nextStep()" class="space-y-6">
+        <form [formGroup]="schoolForm" (ngSubmit)="nextStep()" class="space-y-8">
+
+          <!-- Basic info -->
           <div class="grid md:grid-cols-2 gap-6">
             <div>
               <app-label for="schoolName">School Name <span class="text-red-500">*</span></app-label>
-              <app-input-field-fixed id="schoolName" type="text" formControlName="schoolName" placeholder="Elite Public School" />
-              @if (f['schoolName'].invalid && f['schoolName'].touched) {
-                <p class="mt-1 text-sm text-red-600">School name is required</p>
-              }
+              <app-input-field-fixed id="schoolName" formControlName="schoolName" placeholder="Elite Public School" />
             </div>
-
             <div>
               <app-label for="adminName">Admin Name <span class="text-red-500">*</span></app-label>
-              <app-input-field-fixed id="adminName" type="text" formControlName="adminName" placeholder="John Doe" />
-              @if (f['adminName'].invalid && f['adminName'].touched) {
-                <p class="mt-1 text-sm text-red-600">Admin name is required</p>
-              }
+              <app-input-field-fixed id="adminName" formControlName="adminName" placeholder="John Doe" />
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-6">
+            <div>
+              <app-label>Username <span class="text-red-500">*</span></app-label>
+              <app-input-field-fixed formControlName="username" placeholder="admin123" />
+            </div>
+            <div>
+              <app-label>Email <span class="text-red-500">*</span></app-label>
+              <app-input-field-fixed type="email" formControlName="email" placeholder="admin@school.com" />
+            </div>
+            <div>
+              <app-label>Mobile <span class="text-red-500">*</span></app-label>
+              <app-input-field-fixed formControlName="mobileNo" placeholder="+919876543210" />
+            </div>
+          </div>
+
+          <!-- Communication setup -->
+          <div class="grid md:grid-cols-2 gap-6">
+            <div>
+              <app-label>SMS Sender Name (6-11 chars) <span class="text-red-500">*</span></app-label>
+              <app-input-field-fixed formControlName="smsSenderName" maxlength="11" placeholder="EDGLOBE" />
+            </div>
+            <div>
+              <app-label>School Email (From) <span class="text-red-500">*</span></app-label>
+              <app-input-field-fixed type="email" formControlName="emailFrom" placeholder="principal@school.com" />
             </div>
           </div>
 
           <div class="grid md:grid-cols-2 gap-6">
             <div>
-              <app-label for="username">Username <span class="text-red-500">*</span></app-label>
-              <app-input-field-fixed id="username" type="text" formControlName="username" placeholder="admin_school123" />
-              @if (f['username'].invalid && f['username'].touched) {
-                <div class="mt-1 text-sm text-red-600 space-y-1">
-                  @if (f['username'].errors?.['required']) { <p>Username is required</p> }
-                  @if (f['username'].errors?.['minlength']) { <p>Minimum 6 characters</p> }
-                </div>
-              }
-            </div>
-
-            <div>
-              <app-label for="email">Email <span class="text-red-500">*</span></app-label>
-              <app-input-field-fixed id="email" type="email" formControlName="email" placeholder="admin@school.com" />
-              @if (f['email'].invalid && f['email'].touched) {
-                <p class="mt-1 text-sm text-red-600">Valid email is required</p>
-              }
-            </div>
-          </div>
-
-          <div class="grid md:grid-cols-2 gap-6">
-            <div>
-              <app-label for="mobileNo">Mobile Number <span class="text-red-500">*</span></app-label>
-              <app-input-field-fixed id="mobileNo" type="tel" formControlName="mobileNo" placeholder="+919876543210" />
-              @if (f['mobileNo'].invalid && f['mobileNo'].touched) {
-                <p class="mt-1 text-sm text-red-600">Valid mobile (e.g., +919876543210)</p>
-              }
-            </div>
-
-            <div>
-              <app-label>Preferred Channel <span class="text-red-500">*</span></app-label>
-              <app-select formControlName="preferredChannel" [options]="[
-                { value: 'sms', label: 'SMS Only' },
-                { value: 'whatsapp', label: 'WhatsApp Only' },
-                { value: 'both', label: 'Both' }
-              ]" placeholder="Select channel" />
-              @if (f['preferredChannel'].invalid && f['preferredChannel'].touched) {
-                <p class="mt-1 text-sm text-red-600">Channel is required</p>
-              }
-            </div>
-          </div>
-
-          <!-- ←←← NEW FIELDS ADDED HERE ↓↓↓ -->
-          <div class="grid md:grid-cols-2 gap-6 mt-6">
-            <div>
-              <app-label>SMS Sender Name (6-11 chars) *</app-label>
-              <app-input-field-fixed formControlName="smsSenderName" placeholder="RAINBOWSCH" maxlength="11" />
-              <small class="text-gray-600">Parents will see this name in SMS</small>
-            </div>
-            <!-- Add these 2 fields in Step 1 -->
-            
-            <div class="mt-4">
               <app-label>From Name (optional)</app-label>
-              <app-input-field-fixed formControlName="emailName" placeholder="Rainbow Public School" />
-              <small class="text-gray-600">Name that appears in inbox</small>
+              <app-input-field-fixed formControlName="emailName" placeholder="Elite Public School" />
             </div>
+            <div>
+              <app-label>Email App Password <span class="text-red-500">*</span></app-label>
+              <app-input-field-fixed type="password" formControlName="emailPass" placeholder="xxxx xxxx xxxx xxxx" />
+              <a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-xs text-blue-600 hover:underline block mt-1">
+                Generate App Password
+              </a>
+            </div>
+          </div>
+
+          <!-- Academic Year -->
+          <div class="bg-indigo-50 dark:bg-indigo-950/40 p-6 rounded-xl border border-indigo-100 dark:border-indigo-800">
+            <h3 class="text-lg font-semibold mb-4 text-indigo-800 dark:text-indigo-200">
+              Academic Year <span class="text-red-500">*</span>
+            </h3>
             
-          </div>
-          <div class="grid md:grid-cols-2 gap-6 mt-6">
+            <div class="grid md:grid-cols-2 gap-6">
               <div>
-                <app-label>School Email (From) *</app-label>
-                <app-input-field-fixed type="email" formControlName="emailFrom" placeholder="principal@rainbowschool.com" />
-                <small class="text-gray-600">Email that will appear as sender</small>
+                <app-label>Select Academic Year</app-label>
+                <app-select formControlName="academicYearName" [options]="[
+                  {value: '2025-2026', label: '2025-2026'},
+                  {value: '2026-2027', label: '2026-2027'},
+                  {value: '2027-2028', label: '2027-2028'},
+                  {value: '2028-2029', label: '2028-2029'},
+                  {value: '2029-2030', label: '2029-2030'}
+                ]" placeholder="Choose academic year" />
               </div>
-              <div>
-                <app-label>Email App Password *</app-label>
-                <app-input-field-fixed type="password" formControlName="emailPass" placeholder="abcd efgh ijkl mnop" />
-                <small class="text-gray-600">
-                  <a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-blue-600 underline">
-                    Generate App Password
-                  </a>
-                </small>
-              </div>
-            </div>
 
-          <div class="grid md:grid-cols-3 gap-6 mt-6">
-            <div>
-              <app-label>Opening Time</app-label>
-              <app-input-field-fixed type="time" formControlName="openingTime" />
-            </div>
-            <div>
-              <app-label>Closing Time</app-label>
-              <app-input-field-fixed type="time" formControlName="closingTime" />
-            </div>
-            <div>
-              <app-label>Lunch Break</app-label>
-              <app-input-field-fixed formControlName="lunchBreak" placeholder="12:00 - 12:30" />
+              <!-- Optional: still show start & end dates (read-only or hidden) -->
+              <!-- If you want to show them auto-filled based on selection, we can add logic later -->
             </div>
           </div>
-          <!-- ←←← END OF NEW FIELDS -->
-           <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-        Assign Trial Subscription (Optional)
-      </h3>
-      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-        You can give the school immediate access with a custom trial period.
-      </p>
 
-      <!-- Checkbox + Duration Selection -->
-      <div class="space-y-4">
-              <!-- Superadmin-only fast-track skip (hidden for normal users) -->
-        <div *ngIf="isSuperadmin()" class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-          <div class="flex items-center">
-            <input type="checkbox" id="skipOtpSuper" formControlName="skipOtpSuper"
-                  class="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500" />
-            <label for="skipOtpSuper" class="ml-3 text-sm font-medium text-yellow-800 dark:text-yellow-300">
-              Superadmin Fast-Track: Skip OTP & give direct access (for relatives/special schools)
+          <!-- Subscription -->
+          <div class="bg-amber-50 dark:bg-amber-950/40 p-6 rounded-xl border border-amber-100 dark:border-amber-800">
+            <h3 class="text-lg font-semibold mb-4 text-amber-800 dark:text-amber-200">
+              Assign Subscription (optional – decided by superadmin)
+            </h3>
+            
+            <label class="flex items-center mb-4 cursor-pointer">
+              <input type="checkbox" formControlName="assignSubscriptionNow" class="h-5 w-5 text-amber-600 rounded" />
+              <span class="ml-3 font-medium text-gray-800 dark:text-gray-200">
+                Assign subscription / trial now
+              </span>
             </label>
-          </div>
-          <small class="text-xs text-yellow-700 dark:text-yellow-400 mt-2 block">
-            Use only for trusted users. They will get instant access without mobile verification.
-          </small>
-        </div>
-        <div class="flex items-center">
-          <input type="checkbox" id="assignTrial" formControlName="assignTrial"
-                 class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-          <label for="assignTrial" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-            Assign trial subscription now (recommended for new schools)
-          </label>
-        </div>
 
-        <!-- Duration dropdown (only visible if checkbox is checked) -->
-        <div *ngIf="schoolForm.get('assignTrial')?.value" class="pl-8">
-          <app-label for="trialDurationDays">Trial Duration</app-label>
-         <app-select formControlName="trialDurationDays" [options]="[
-            { value: '14', label: '14 days (Standard quick trial)' },
-            { value: '30', label: '30 days (1 month)' },
-            { value: '60', label: '60 days (2 months)' },
-            { value: '90', label: '90 days (3 months)' },
-            { value: '180', label: '180 days (6 months – for serious prospects)' },
-            { value: '365', label: '365 days (1 year – special cases)' },
-            { value: 'custom', label: 'Custom days...' }
-          ]" placeholder="Select duration" />
-
-          <!-- Custom days input (only if 'custom' selected) -->
-          <div *ngIf="schoolForm.get('trialDurationDays')?.value === 'custom'" class="mt-4">
-            <app-label for="customTrialDays">Enter custom days (1–365)</app-label>
-            <app-input-field-fixed id="customTrialDays" type="number" formControlName="customTrialDays"
-                                  placeholder="e.g., 90" min="1" max="365" />
-          </div>
-        </div>
-        
-      </div>
-    </div>
-
-          <div class="flex items-center space-x-2 mt-4">
-            <input type="checkbox" formControlName="whatsappOptIn" id="whatsappOptIn" class="h-4 w-4 text-blue-600 rounded" />
-            <app-label for="whatsappOptIn" class="cursor-pointer">Opt-in for WhatsApp notifications</app-label>
+            @if (schoolForm.get('assignSubscriptionNow')?.value) {
+              <div class="grid md:grid-cols-2 gap-6 pl-8">
+                <div>
+                  <app-label>Plan Type</app-label>
+                  <app-select formControlName="subscriptionType" [options]="[
+                    {value: 'trial', label: 'Trial'},
+                    {value: 'basic', label: 'Basic'},
+                    {value: 'premium', label: 'Premium'}
+                  ]" />
+                </div>
+                <div>
+                  <app-label>Duration</app-label>
+                  <app-select formControlName="subscriptionDurationDays" [options]="[
+                    {value: '14',  label: '14 days (quick trial)'},
+                    {value: '30',  label: '30 days (1 month)'},
+                    {value: '60',  label: '60 days (2 months)'},
+                    {value: '90',  label: '90 days (3 months)'},
+                    {value: '180', label: '180 days (6 months)'},
+                    {value: '365', label: '365 days (1 full year)'}
+                  ]" />
+                </div>
+              </div>
+            }
           </div>
 
-          <div class="flex gap-3 pt-4">
-            <button type="button" (click)="prevStep()" class="flex-1 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+          <!-- Fast Track – only superadmin -->
+          @if (isSuperadmin()) {
+            <div class="bg-blue-50 dark:bg-blue-950/40 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
+              <label class="flex items-center cursor-pointer">
+                <input type="checkbox" formControlName="fastTrack" class="h-5 w-5 text-blue-600 rounded" />
+                <span class="ml-3 font-medium text-blue-800 dark:text-blue-200">Superadmin Fast-Track: Skip OTP & instant access</span>
+              </label>
+              <p class="text-sm text-blue-700 dark:text-blue-300 mt-2 ml-8">
+                Only use for trusted schools – no mobile verification required
+              </p>
+            </div>
+          }
+
+          <!-- Buttons -->
+          <div class="flex gap-4 pt-8">
+            <button type="button" (click)="prevStep()" class="flex-1 py-3.5 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition">
               Back
             </button>
-           <button type="submit"
-                    [disabled]="
-                      (step() === 1 && isSendingOtp()) ||
-                      (step() === 2 && (otpForm.invalid || isVerifyingOtp())) ||
-                      (step() === 3 && (addressForm.invalid || isSubmitting()))
-                    "
-                    class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-              {{ step() === 1 ? (isSendingOtp() ? 'Sending OTP...' : 'Next Step') :
-                step() === 2 ? (isVerifyingOtp() ? 'Verifying...' : 'Verify & Continue') :
-                (isSubmitting() ? 'Creating...' : 'Create Account') }}
+            <button type="submit" [disabled]="schoolForm.invalid || isSendingOtp()"
+                    class="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition disabled:opacity-60">
+              {{ isSendingOtp() ? 'Sending OTP...' : 'Next – Verify Mobile' }}
             </button>
           </div>
         </form>
       }
 
-      <!-- Step 2: OTP -->
+      <!-- STEP 2: OTP -->
       @if (step() === 2) {
-        <form [formGroup]="otpForm" (ngSubmit)="nextStep()" class="space-y-6">
-          <div class="text-center">
-            <div class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-              </svg>
-            </div>
-            <h3 class="text-xl font-semibold">Verify Mobile</h3>
-            <p class="text-gray-600">Enter 6-digit OTP sent to <strong>{{ formData().mobileNo }}</strong></p>
+        <form [formGroup]="otpForm" (ngSubmit)="nextStep()" class="space-y-8 text-center">
+          <div class="mx-auto w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+            <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
           </div>
 
-          <app-input-field-fixed
-            id="otp" type="text" formControlName="otp"
-            placeholder="000000"
-            className="text-center text-2xl font-mono tracking-widest"
-            maxlength="6" />
-          @if (o['otp'].invalid && o['otp'].touched) {
-            <p class="text-sm text-red-600 text-center">OTP must be 6 digits</p>
-          }
-
-          <p class="text-center text-xs">
-            Didn't receive? <button type="button" (click)="sendOtp()" [disabled]="isSendingOtp()" class="text-blue-600 underline">Resend</button>
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Verify Mobile Number</h2>
+          <p class="text-gray-600 dark:text-gray-300">
+            Enter 6-digit OTP sent to <strong>{{ formData().mobileNo }}</strong>
           </p>
 
-          <div class="flex gap-3 pt-4">
-            <button type="button" (click)="prevStep()" class="flex-1 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+          <app-input-field-fixed
+            id="otp"
+            type="text"
+            formControlName="otp"
+            placeholder="000000"
+            className="text-center text-3xl font-mono tracking-widest"
+            maxlength="6" />
+
+          <p class="text-sm text-gray-500 mt-4">
+            Didn't receive? <button type="button" (click)="sendOtp()" [disabled]="isSendingOtp()" class="text-blue-600 underline ml-1">Resend OTP</button>
+          </p>
+
+          <div class="flex gap-4 pt-6">
+            <button type="button" (click)="prevStep()" class="flex-1 py-3.5 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium">
               Back
             </button>
-            <button type="submit"
-                    [disabled]="otpForm.invalid || isVerifyingOtp()"
-                    class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+            <button type="submit" [disabled]="otpForm.invalid || isVerifyingOtp()"
+                    class="flex-1 py-3.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium disabled:opacity-60">
               {{ isVerifyingOtp() ? 'Verifying...' : 'Verify & Continue' }}
             </button>
           </div>
         </form>
       }
 
-      <!-- Step 3: Address -->
+      <!-- STEP 3: Address -->
       @if (step() === 3) {
-        <form [formGroup]="addressForm" (ngSubmit)="nextStep()" class="space-y-6">
-          <div class="text-center">
-            <h3 class="text-xl font-semibold">School Address</h3>
-            <p class="text-gray-600">Click map to set location</p>
+        <form [formGroup]="addressForm" (ngSubmit)="nextStep()" class="space-y-8">
+          <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">School Address</h2>
+            <p class="text-gray-600 dark:text-gray-300">Click on map to set exact location</p>
           </div>
 
           <div class="grid md:grid-cols-2 gap-6">
             <div>
-              <app-label for="street">Street <span class="text-red-500">*</span></app-label>
-              <app-input-field-fixed id="street" formControlName="street" placeholder="123 Main St" />
+              <app-label>Street <span class="text-red-500">*</span></app-label>
+              <app-input-field-fixed formControlName="street" placeholder="123 Main Road" />
             </div>
             <div>
-              <app-label for="postalCode">Postal Code <span class="text-red-500">*</span></app-label>
-              <app-input-field-fixed id="postalCode" formControlName="postalCode" placeholder="110001" />
+              <app-label>Postal Code <span class="text-red-500">*</span></app-label>
+              <app-input-field-fixed formControlName="postalCode" placeholder="834001" />
             </div>
           </div>
 
           <div class="grid md:grid-cols-2 gap-6">
             <div>
-              <app-label for="city">City <span class="text-red-500">*</span></app-label>
-              <app-input-field-fixed id="city" formControlName="city" placeholder="New Delhi" />
+              <app-label>City <span class="text-red-500">*</span></app-label>
+              <app-input-field-fixed formControlName="city" placeholder="Ranchi" />
             </div>
             <div>
-              <app-label for="state">State <span class="text-red-500">*</span></app-label>
-              <app-input-field-fixed id="state" formControlName="state" placeholder="Delhi" />
+              <app-label>State <span class="text-red-500">*</span></app-label>
+              <app-input-field-fixed formControlName="state" placeholder="Jharkhand" />
             </div>
           </div>
 
           <div>
-            <app-label for="country">Country <span class="text-red-500">*</span></app-label>
-            <app-input-field-fixed id="country" formControlName="country" placeholder="India" />
+            <app-label>Country <span class="text-red-500">*</span></app-label>
+            <app-input-field-fixed formControlName="country" placeholder="India" />
           </div>
 
           <!-- Map -->
-          <div class="relative">
-            <app-label>School Location <span class="text-red-500">*</span> - Click to set</app-label>
-            <div class="relative bg-white rounded-lg border overflow-hidden">
-              <div class="absolute top-2 right-2 z-10 bg-white px-3 py-1 rounded-md text-xs shadow">Click to drop pin</div>
-              <google-map height="300px" width="100%" [center]="center" [zoom]="zoom" (mapClick)="onMapClick($event)">
+          <div class="mt-6">
+            <app-label>School Location on Map <span class="text-red-500">*</span></app-label>
+            <div class="relative mt-2 rounded-xl overflow-hidden border border-gray-300 dark:border-gray-600 shadow">
+              <div class="absolute top-3 right-3 z-10 bg-white dark:bg-gray-800 px-3 py-1 rounded text-xs shadow-md">
+                Click to place pin
+              </div>
+              <google-map height="320px" width="100%" [center]="center" [zoom]="zoom" (mapClick)="onMapClick($event)">
                 @if (markerPosition) {
                   <map-marker [position]="markerPosition" [title]="'School Location'"></map-marker>
                 }
               </google-map>
             </div>
-            <p class="text-xs text-gray-500 mt-2">Auto-fills address</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">Click anywhere on the map to set coordinates</p>
           </div>
 
-          <!-- Lat/Lng -->
-          <div class="grid md:grid-cols-2 gap-4">
+          <div class="grid md:grid-cols-2 gap-6">
             <div>
-              <app-label class="text-xs">Latitude</app-label>
-              <app-input-field-fixed type="number" formControlName="latitude" readonly className="bg-gray-50" />
+              <app-label>Latitude</app-label>
+              <app-input-field-fixed type="number" formControlName="latitude" readonly className="bg-gray-100 dark:bg-gray-700" />
             </div>
             <div>
-              <app-label class="text-xs">Longitude</app-label>
-              <app-input-field-fixed type="number" formControlName="longitude" readonly className="bg-gray-50" />
+              <app-label>Longitude</app-label>
+              <app-input-field-fixed type="number" formControlName="longitude" readonly className="bg-gray-100 dark:bg-gray-700" />
             </div>
           </div>
 
           @if (a['latitude'].invalid || a['longitude'].invalid) {
-            <div class="bg-red-50 border border-red-200 rounded p-3">
-              <p class="text-sm text-red-600 font-medium">Location Required</p>
-              <p class="text-xs text-red-500">Click map to set position</p>
+            <div class="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-4 rounded-lg text-center">
+              <p class="text-red-600 dark:text-red-400 font-medium">Location is required – please click on the map</p>
             </div>
           }
 
-          <div class="flex gap-3 pt-4">
-            <button type="button" (click)="prevStep()" class="flex-1 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+          <div class="flex gap-4 pt-8">
+            <button type="button" (click)="prevStep()" class="flex-1 py-3.5 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium">
               Back
             </button>
-            <button type="submit"
-                    [disabled]="addressForm.invalid || isSubmitting()"
-                    class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
-              {{ isSubmitting() ? 'Creating...' : 'Create Account' }}
+            <button type="submit" [disabled]="addressForm.invalid || isSubmitting()"
+                    class="flex-1 py-3.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium disabled:opacity-60">
+              {{ isSubmitting() ? 'Creating School...' : 'Create School Account' }}
             </button>
-          </div>
-
-          <div class="text-center mt-6 pt-4 border-t">
-            <a routerLink="/auth/login" class="text-blue-600 text-sm">Already have an account? Sign In</a>
           </div>
         </form>
       }
     </div>
 
-    <!-- Footer -->
-    <div class="text-center mt-8 text-xs text-gray-500">
-      Copyright © 2025 <a href="#" class="text-blue-600 hover:underline">Your School App</a>. All rights reserved.
+    <div class="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
+      © 2025–2026 School Management System
     </div>
   </div>
 </div>
